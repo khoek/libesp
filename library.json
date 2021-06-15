@@ -1,7 +1,7 @@
 {
     "name": "libesp",
     "version": "1.0.0",
-    "description": "A library for esp-idf containing useful additional support/library functions.",
+    "description": "A library built on esp-idf containing useful additional support/library functions.",
     "keywords": "utility, timer, delay, wait, input, esp-idf, esp32, esp8266",
     "repository": {
         "type": "git",
