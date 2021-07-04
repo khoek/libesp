@@ -35,3 +35,7 @@ void util_wait_for_keypress() {
 void util_log_idf_version() {
     ESP_LOGW(TAG, "%d.%d.%d", ESP_IDF_VERSION_MAJOR, ESP_IDF_VERSION_MINOR, ESP_IDF_VERSION_PATCH);
 }
+
+void util_print_stack_remaining() {
+    ESP_LOGW(TAG, "stack words remaining: %u", uxTaskGetStackHighWaterMark(NULL));
+}
