@@ -36,6 +36,18 @@ void util_log_idf_version() {
     ESP_LOGW(TAG, "%d.%d.%d", ESP_IDF_VERSION_MAJOR, ESP_IDF_VERSION_MINOR, ESP_IDF_VERSION_PATCH);
 }
 
-void util_print_stack_remaining() {
+esp_err_t util_stack_overflow_check() {
+    UBaseType_t stack_remaining = uxTaskGetStackHighWaterMark(NULL);
+    ESP_LOGD(TAG, "stack words remaining: %u", stack_remaining);
+
+    if (stack_remaining <= 0) {
+        ESP_LOGE(TAG, "stack overflow detected!");
+        return ESP_FAIL;
+    }
+
+    return ESP_OK;
+}
+
+void util_stack_print_remaining() {
     ESP_LOGW(TAG, "stack words remaining: %u", uxTaskGetStackHighWaterMark(NULL));
 }
