@@ -1,8 +1,10 @@
 #include <esp_idf_version.h>
 #include <esp_log.h>
+#include <esp_system.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <stdio.h>
+#include <sys/time.h>
 
 #include "libesp.h"
 
@@ -24,10 +26,14 @@ void util_wait_micros(int64_t micros) {
 
 void util_wait_for_keypress() {
     // Clear the buffer
-    while (fgetc(stdin) != EOF) vTaskDelay(10 / portTICK_PERIOD_MS);
+    while (fgetc(stdin) != EOF) {
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+    }
 
     // Now wait until next key
-    while (fgetc(stdin) == EOF) vTaskDelay(10 / portTICK_PERIOD_MS);
+    while (fgetc(stdin) == EOF) {
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+    }
 }
 
 void util_log_idf_version() {
@@ -50,6 +56,47 @@ esp_err_t util_stack_overflow_check() {
 void util_stack_print_remaining() {
     ESP_LOGW(TAG, "stack words remaining: %u",
              uxTaskGetStackHighWaterMark(NULL));
+}
+
+// A UUID has the format:
+//  xxxxxxxx-xxxx-Axxx-Bxxx-xxxxxxxxxxxx
+// where A is a 4-bit "version", and B is a 1-to-3-bit "variant". See spec for
+// the details on the encoding of B.
+
+#define UUID_VER4_B6_VALUE 0x40
+#define MASK_UUID_VER4_B6 0x0F
+
+#define UUID_VER4_VAR1_B8_VALUE 0x80
+#define MASK_UUID_VER4_VAR1_B8 0x3F
+
+void util_generate_uuid4(uuid_t *out_uuid) {
+    uint8_t *b = out_uuid->b;
+
+    esp_fill_random(b, UUID_BYTE_COUNT);
+
+    b[6] = UUID_VER4_B6_VALUE | (b[6] & MASK_UUID_VER4_B6);
+    b[8] = (b[8] & MASK_UUID_VER4_VAR1_B8) | UUID_VER4_VAR1_B8_VALUE;
+}
+
+esp_err_t util_print_uuid(char **str, const uuid_t *uuid) {
+    const uint8_t *b = uuid->b;
+
+    int ret = asprintf(
+        str,
+        "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+        b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10],
+        b[11], b[12], b[13], b[14], b[15]);
+
+    return ret < 0 ? ESP_FAIL : ESP_OK;
+}
+
+uint64_t util_current_epoch_time_ms() {
+    struct timeval time;
+    assert(!gettimeofday(&time, NULL));
+
+    // TODO This is susceptible to the Y2K38 bug, migrate to fix in esp-idf
+    // v5.0.
+    return ((uint64_t) time.tv_sec) * 1000 + ((uint64_t) time.tv_usec) / 1000;
 }
 
 void util_freertos_print_usage() {
